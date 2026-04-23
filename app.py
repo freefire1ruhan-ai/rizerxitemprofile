@@ -72,7 +72,7 @@ def get_server_url(lock_region: str):
     elif region in {"BR", "US", "SAC", "NA"}:
         return "https://client.us.freefiremobile.com/SetPlayerGalleryShowInfo"
     elif region == "BD":
-        return "https://clientbp.ggblueshark.com/SetPlayerGalleryShowInfo"
+        return "https://clientbp.common.ggbluefox.com/SetPlayerGalleryShowInfo"
     elif region == "SG":
         return "https://client.sg.freefiremobile.com/SetPlayerGalleryShowInfo"
     else:
