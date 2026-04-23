@@ -5,6 +5,9 @@ import requests
 import time
 import json
 import base64
+import aiohttp
+import asyncio
+import ssl
 
 app = Flask(__name__)
 
@@ -142,8 +145,21 @@ def encrypt_protobuf(data):
     cipher = AES.new(key, AES.MODE_CBC, iv)
     return cipher.encrypt(padded_data)
 
+# --- Async Gallery function (provided by user, adapted) ---
+async def _async_gallery(payload, url, headers):
+    """Send encrypted payload to the FreeFire gallery endpoint asynchronously"""
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, data=payload, headers=headers, ssl=ssl_context) as response:
+            if response.status == 200:
+                return response.status, await response.text()
+            return response.status, None
+
+# --- Synchronous wrapper that uses the async Gallery function ---
 def send_profile_request(jwt_token, encrypted_data, lock_region):
-    """Profile request bhejta hai"""
+    """Profile request bhejta hai (sync wrapper around async Gallery)"""
     url = get_server_url(lock_region)
     
     headers = {
@@ -157,8 +173,15 @@ def send_profile_request(jwt_token, encrypted_data, lock_region):
     }
 
     try:
-        response = requests.post(url, headers=headers, data=encrypted_data, timeout=10)
-        return response
+        # Run the async function synchronously
+        status_code, response_text = asyncio.run(_async_gallery(encrypted_data, url, headers))
+        
+        # Create a minimal response object to keep compatibility with existing code
+        class MockResponse:
+            def __init__(self, status_code, text):
+                self.status_code = status_code
+                self.text = text if text is not None else ""
+        return MockResponse(status_code, response_text)
     except Exception as e:
         raise Exception(f"External request failed: {str(e)}")
 
